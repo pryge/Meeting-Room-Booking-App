@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import api from "../api";
+import { useAuth } from "../context/AuthContext";
 import { Loader2, Calendar, Users, Layout, MapPin } from "lucide-react";
 
 const RoomDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  
   const [room, setRoom] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -138,6 +142,23 @@ const RoomDetailsPage: React.FC = () => {
                     it provides everything you need for a successful session.
                 </p>
             </div>
+
+            {isAdmin && (
+                <div className="mt-16 p-10 bg-indigo-50/50 rounded-[2.5rem] border border-indigo-100">
+                    <h4 className="text-xl font-black text-slate-900 mb-2">Invite Team Member</h4>
+                    <p className="text-slate-500 text-sm font-medium mb-6">Add someone to this room by their email address.</p>
+                    <div className="flex gap-3">
+                        <input 
+                            type="email" 
+                            placeholder="colleague@example.com"
+                            className="flex-1 bg-white border border-indigo-100 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 outline-none transition-all"
+                        />
+                        <button className="px-8 py-4 bg-indigo-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-900 transition-all active:scale-95 shadow-xl shadow-indigo-200">
+                            Invite
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
 
         <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-indigo-100 flex flex-col min-h-[500px]">
