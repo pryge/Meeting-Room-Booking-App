@@ -7,18 +7,24 @@ const seedDatabase = async () => {
     await sequelize.sync();
 
     // Для адміна
-    const adminExist = await User.findOne({where: {email: 'admin@example.com'}});
+    const adminEmail = 'admin@example.com';
+    const adminPassword = 'adminpasswd123';
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    
+    const adminExist = await User.findOne({where: {email: adminEmail}});
     if (!adminExist) {
-        const hashedPassword = await bcrypt.hash('adminpasswd123', 10);
         await User.create({
           name: 'Demo Admin',
-          email: 'admin@example.com',
+          email: adminEmail,
           password: hashedPassword,
           role: 'admin'
         });
-        console.log('Demo admin created: admin@example.com / adminpasswd123');
+        console.log(`Demo admin created: ${adminEmail} / ${adminPassword}`);
     } else {
-        console.log('Admin already exists');
+        adminExist.password = hashedPassword;
+        adminExist.role = 'admin';
+        await adminExist.save();
+        console.log(`Admin password reset to: ${adminPassword}`);
     }
 
     // Для кімнати
