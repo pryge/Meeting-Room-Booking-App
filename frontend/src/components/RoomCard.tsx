@@ -1,6 +1,7 @@
-import React from 'react';
-import { Users, Layout } from 'lucide-react';
+import { Users, Layout, Pencil, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import api from '../api';
 
 interface RoomCardProps {
   room: {
@@ -9,9 +10,13 @@ interface RoomCardProps {
     capacity: number;
     status: 'available' | 'busy';
   };
+  onEdit?: (room: any) => void;
+  onDelete?: () => void;
 }
 
-const RoomCard: React.FC<RoomCardProps> = ({ room }) => {
+const RoomCard: React.FC<RoomCardProps> = ({ room, onEdit, onDelete }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const images = [
     'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=800',
     'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&q=80&w=800',
@@ -36,6 +41,29 @@ const RoomCard: React.FC<RoomCardProps> = ({ room }) => {
             {room.status}
           </span>
         </div>
+
+        {isAdmin && (
+          <div className="absolute top-4 left-4 flex gap-2">
+            <button 
+              onClick={(e) => { e.preventDefault(); onEdit?.(room); }}
+              className="p-3 bg-white/90 backdrop-blur-xl rounded-2xl text-slate-600 hover:text-indigo-600 hover:bg-white shadow-xl transition-all active:scale-95"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={async (e) => { 
+                e.preventDefault(); 
+                if (window.confirm('Delete this room?')) {
+                  await api.delete(`/rooms/${room.id}`);
+                  onDelete?.();
+                }
+              }}
+              className="p-3 bg-white/90 backdrop-blur-xl rounded-2xl text-slate-600 hover:text-rose-600 hover:bg-white shadow-xl transition-all active:scale-95"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="p-10 pt-4 space-y-8">
