@@ -48,7 +48,7 @@ export const login = async (req: Request, res: Response) => {
       })
     }
 
-    const { email, password } = req.body;
+    const { email, password } = validation.data;
 
     const existingUser = await User.findOne({where: {email: email}})
     if (!existingUser) {
@@ -71,10 +71,26 @@ export const login = async (req: Request, res: Response) => {
 
 export const logout = async (req: Request, res: Response) => {
   try {
-    res.clearCookie('token');
     res.status(200).json({message: 'Logout successful'})
   } catch (error) {
     console.log('Error in logout',error) 
     res.status(500).json({ message: 'Error logging out' });
+  }
+};
+
+//Перевірка сесії та чи токен дійсний 
+
+export const getMe = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+    const user = await User.findByPk(req.user.id, {
+      attributes: { exclude: ['password'] }
+    });
+    res.status(200).json({ user });
+  } catch (error) {
+    console.log('Error in getMe', error);
+    res.status(500).json({ message: 'Error fetching user' });
   }
 };
