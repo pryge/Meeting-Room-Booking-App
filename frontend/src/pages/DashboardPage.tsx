@@ -2,12 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api';
 import RoomCard from '../components/RoomCard';
-import { Loader2 } from 'lucide-react';
+import RoomModal from '../components/RoomModal';
+import { Loader2, Plus } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const DashboardPage: React.FC = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
   const [rooms, setRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<any>(null);
 
   const fetchRooms = async () => {
     setLoading(true);
@@ -39,6 +47,18 @@ const DashboardPage: React.FC = () => {
           Choose the best space for your team, collaborate efficiently and 
           book your next successful meeting in seconds.
         </p>
+
+        {isAdmin && (
+          <div className="mt-12 flex justify-center">
+            <button 
+              onClick={() => { setEditingRoom(null); setIsModalOpen(true); }}
+              className="flex items-center gap-3 px-10 py-5 bg-slate-900 text-white rounded-[2rem] font-black text-xs uppercase tracking-[0.2em] shadow-2xl shadow-slate-200 hover:bg-indigo-600 hover:shadow-indigo-200 active:scale-95 transition-all duration-500"
+            >
+              <Plus className="w-5 h-5" />
+              Add New Room
+            </button>
+          </div>
+        )}
       </header>
 
       {loading ? (
@@ -59,9 +79,18 @@ const DashboardPage: React.FC = () => {
                   ...room,
                   status: room.status || 'available'
                 }} 
+                onEdit={(r) => { setEditingRoom(r); setIsModalOpen(true); }}
+                onDelete={fetchRooms}
               />
             ))}
           </div>
+
+          <RoomModal 
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onSuccess={fetchRooms}
+            room={editingRoom}
+          />
 
           {rooms.length === 0 && (
             <div className="text-center py-24 bg-slate-50/50 rounded-3xl border-4 border-dashed border-slate-100">
