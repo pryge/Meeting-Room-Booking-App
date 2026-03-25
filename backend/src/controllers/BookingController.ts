@@ -2,6 +2,24 @@ import { Request, Response } from 'express';
 import { Booking } from '../models';
 import { Op } from 'sequelize';
 
+export const getMyBookings = async (req: Request, res: Response) => {
+  if (!req.user) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  try {
+    const bookings = await Booking.findAll({
+      where: { userId: req.user.id },
+      include: ['room'],
+      order: [['startTime', 'DESC']]
+    });
+    res.status(200).json({ message: 'My bookings fetched successfully', bookings });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Error fetching your bookings' });
+  }
+};
+
 export const getBookings = async (req: Request, res: Response) => {
   const { roomId } = req.query;
 

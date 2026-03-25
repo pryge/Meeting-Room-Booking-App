@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import RoomDetailsPage from './pages/RoomDetailsPage';
+import MyBookingsPage from './pages/MyBookingsPage';
 import Layout from './components/Layout';
 
 function AppContent() {
@@ -25,6 +26,7 @@ function AppContent() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/" element={<DashboardPage />} />
           <Route path="/room/:id" element={<RoomDetailsPage />} />
+          <Route path="/my-bookings" element={<MyBookingsPage />} />
         </Routes>
       </Layout>
     </Router>
