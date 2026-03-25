@@ -4,7 +4,7 @@ import { authMiddleware, adminMiddleware } from '../middleware/auth';
 
 const router = Router();
 
-router.get('/room/:roomId', authMiddleware, getBookings);
+router.get('/', authMiddleware, getBookings);
 router.post('/', authMiddleware, createBooking);
 router.put('/:id', authMiddleware, adminMiddleware, updateBooking);
 router.delete('/:id', authMiddleware, cancelBooking);
