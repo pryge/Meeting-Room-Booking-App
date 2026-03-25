@@ -4,7 +4,7 @@ import { User } from "./models";
 
 const seedAdmin = async () => {
   try {
-    sequelize.sync();
+    await sequelize.sync();
 
     const adminExist = await User.findOne({where: {email: 'admin@example.com'}});
 
@@ -13,7 +13,7 @@ const seedAdmin = async () => {
       return;
     }
 
-    const hashedPassword = await bcrypt.hash('adminpasswrd123', 10);
+    const hashedPassword = await bcrypt.hash('adminpasswd123', 10);
 
     await User.create({
       name: 'Demo Admin',
