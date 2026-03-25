@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import api from "../api";
 import { Loader2, Calendar, Users, Layout, MapPin } from "lucide-react";
 
@@ -7,7 +7,15 @@ const RoomDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [room, setRoom] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState("");
+  const [bookingMsg, setBookingMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [description, setDescription] = useState("");
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchRoom = async () => {
@@ -23,6 +31,29 @@ const RoomDetailsPage: React.FC = () => {
     };
     fetchRoom();
   }, [id]);
+
+  const handleBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBookingLoading(true);
+    setBookingMsg(null);
+    try {
+      await api.post("/bookings", {
+        roomId: id,
+        startTime,
+        endTime,
+        description,
+      });
+      setBookingMsg({ type: 'success', text: "Booking created successfully!" });
+      setTimeout(() => navigate('/my-bookings'), 2000);
+    } catch (err: any) {
+      setBookingMsg({ 
+        type: 'error', 
+        text: err.response?.data?.message || "Failed to create booking" 
+      });
+    } finally {
+      setBookingLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -109,18 +140,66 @@ const RoomDetailsPage: React.FC = () => {
             </div>
         </div>
 
-        <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-indigo-100 flex flex-col justify-between min-h-[400px]">
-            <div>
+        <div className="bg-slate-900 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-indigo-100 flex flex-col min-h-[500px]">
+            <div className="mb-8">
                 <Calendar className="w-12 h-12 text-indigo-400 mb-6" />
-                <h3 className="text-3xl font-black tracking-tight mb-4">Book Now</h3>
+                <h3 className="text-3xl font-black tracking-tight mb-2">Book Now</h3>
                 <p className="text-slate-400 font-medium text-lg leading-snug">
-                    Reserve this space instantly for your next meeting. 
+                    Select your preferred time slot to reserve {room.name}.
                 </p>
             </div>
             
-            <button className="w-full py-5 bg-gradient-to-r from-indigo-500 to-violet-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:from-indigo-400 hover:to-violet-500 transition-all active:scale-95 shadow-xl shadow-indigo-500/20 mt-10">
-                Confirm Reservation
-            </button>
+            <form onSubmit={handleBooking} className="space-y-6 flex-1 flex flex-col">
+                {bookingMsg && (
+                    <div className={`p-4 rounded-2xl text-xs font-bold ${
+                        bookingMsg.type === 'success' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                    }`}>
+                        {bookingMsg.text}
+                    </div>
+                )}
+
+                <div className="space-y-4">
+                    <div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2 ml-1">Start Time</label>
+                        <input 
+                            type="datetime-local" 
+                            required
+                            className="w-full bg-slate-800 border border-slate-700 rounded-2xl px-5 py-3.5 text-white font-bold focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+                            value={startTime}
+                            onChange={(e) => setStartTime(e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2 ml-1">End Time</label>
+                        <input 
+                            type="datetime-local" 
+                            required
+                            className="w-full bg-slate-800 border border-slate-700 rounded-2xl px-5 py-3.5 text-white font-bold focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none"
+                            value={endTime}
+                            onChange={(e) => setEndTime(e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2 ml-1">Purpose / Description</label>
+                        <textarea 
+                            className="w-full bg-slate-800 border border-slate-700 rounded-2xl px-5 py-3.5 text-white font-bold focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all outline-none h-24 resize-none"
+                            placeholder="Briefly describe the meeting purpose"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                <div className="mt-auto pt-6">
+                    <button 
+                        type="submit"
+                        disabled={bookingLoading}
+                        className="w-full py-5 bg-gradient-to-r from-indigo-500 to-violet-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:from-indigo-400 hover:to-violet-500 transition-all active:scale-95 shadow-xl shadow-indigo-500/20 disabled:opacity-50"
+                    >
+                        {bookingLoading ? 'Processing...' : 'Confirm Reservation'}
+                    </button>
+                </div>
+            </form>
         </div>
       </div>
 
