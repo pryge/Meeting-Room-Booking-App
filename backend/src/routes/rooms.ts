@@ -1,11 +1,12 @@
 import { Router } from 'express';
-import { getRooms, createRoom, deleteRoom } from '../controllers/RoomController';
-import { authMiddleware } from '../middleware/auth';
+import { getRooms, createRoom, deleteRoom, updateRoom } from '../controllers/RoomController';
+import { authMiddleware, adminMiddleware } from '../middleware/auth';
 
 const router = Router();
 
 router.get('/', authMiddleware, getRooms);
-router.post('/', authMiddleware, createRoom);
-router.delete('/:id', authMiddleware, deleteRoom);
+router.post('/', authMiddleware, adminMiddleware, createRoom);
+router.put('/:id', authMiddleware, adminMiddleware, updateRoom);
+router.delete('/:id', authMiddleware, adminMiddleware, deleteRoom);
 
 export default router;

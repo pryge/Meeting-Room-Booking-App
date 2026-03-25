@@ -11,3 +11,5 @@ export const createRoom = async (req: Request, res: Response) => {
 export const deleteRoom = async (req: Request, res: Response) => {
 
 };
+
+export const updateRoom = async (req: Request, res: Response) => {}
