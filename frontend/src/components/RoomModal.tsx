@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { X, Layout, Users, Loader2 } from 'lucide-react';
-import api from '../api';
+import { RoomService } from '../services/room.service';
+import { Room } from '../types';
 
 interface RoomModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  room?: any;
+  room?: Room | null;
 }
 
 const RoomModal: React.FC<RoomModalProps> = ({ isOpen, onClose, onSuccess, room }) => {
@@ -33,13 +34,19 @@ const RoomModal: React.FC<RoomModalProps> = ({ isOpen, onClose, onSuccess, room 
     setError('');
 
     try {
+      let response;
       if (room) {
-        await api.put(`/rooms/${room.id}`, { name, capacity });
+        response = await RoomService.updateRoom(room.id, { name, capacity });
       } else {
-        await api.post('/rooms', { name, capacity });
+        response = await RoomService.createRoom({ name, capacity });
       }
-      onSuccess();
-      onClose();
+
+      if (response.status === 'success') {
+        onSuccess();
+        onClose();
+      } else {
+        setError(response.message || 'Failed to save room');
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to save room');
     } finally {
@@ -125,3 +132,4 @@ const RoomModal: React.FC<RoomModalProps> = ({ isOpen, onClose, onSuccess, room 
 };
 
 export default RoomModal;
+

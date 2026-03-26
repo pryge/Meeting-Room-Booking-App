@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../api';
+import { RoomService } from '../services/room.service';
+import { Room } from '../types';
 import RoomCard from '../components/RoomCard';
 import RoomModal from '../components/RoomModal';
 import { Loader2, Plus } from 'lucide-react';
@@ -10,19 +11,23 @@ const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
 
-  const [rooms, setRooms] = useState<any[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingRoom, setEditingRoom] = useState<any>(null);
+  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
 
   const fetchRooms = async () => {
     setLoading(true);
     setError('');
     try {
-      const response = await api.get('/rooms');
-      setRooms(Array.isArray(response.data) ? response.data : response.data.rooms || []);
+      const response = await RoomService.getRooms();
+      if (response.status === 'success' && response.data) {
+        setRooms(response.data.rooms);
+      } else {
+        setError(response.message || 'Failed to fetch rooms');
+      }
     } catch (err) {
       setError('Не вдалося завантажити кімнати. Спробуйте пізніше.');
     } finally {
@@ -110,3 +115,4 @@ const DashboardPage: React.FC = () => {
 };
 
 export default DashboardPage;
+

@@ -1,96 +1,53 @@
 import { Request, Response } from "express";
-import { User } from "../models";
-import bcrypt from "bcryptjs";
+import { AuthService } from "../services/AuthService";
 import { loginSchema, registerSchema } from "../validations/auth";
-import * as jwt from 'jsonwebtoken';
+import { catchAsync } from "../utils/catchAsync";
+import { AppError } from "../utils/AppError";
 
-export const register = async (req: Request, res: Response) => {
-  try {
-    const validation = registerSchema.safeParse(req.body);
-    if (!validation.success) {
-      return res.status(400).json({ 
-        message: 'Validation failed', 
-        errors: validation.error.issues.map(err => ({ field: err.path[0], message: err.message }))
-      });
-    }
-
-    const { email, password, name } = validation.data;
-
-    const existingUser = await User.findOne({where: {email: email}})
-
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = await User.create({
-      email,
-      password: hashedPassword,
-      name,
-      role: 'user'
-    });
-
-    res.status(201).json({ message: 'User registered successfully' , user});
-  } catch (error) {
-    console.log('Error in register',error) 
-    res.status(500).json({ message: 'Error registering user' });
+export const register = catchAsync(async (req: Request, res: Response) => {
+  const validation = registerSchema.safeParse(req.body);
+  if (!validation.success) {
+    throw new AppError('Validation failed', 400);
   }
-};
 
-export const login = async (req: Request, res: Response) => {
-  try {
-    const validation = loginSchema.safeParse(req.body);
-    if(!validation.success) {
-      return res.status(400).json({
-        message: 'Login failed',
-        errors: validation.error.issues.map(err => ({field: err.path[0], message: err.message}))
-      })
-    }
+  const user = await AuthService.register(validation.data);
+  res.status(201).json({
+    status: 'success',
+    message: 'User registered successfully',
+    data: { user }
+  });
+});
 
-    const { email, password } = validation.data;
-
-    const existingUser = await User.findOne({where: {email: email}})
-    if (!existingUser) {
-      return res.status(400).json({message: 'User not found'})
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, existingUser.password)
-    if(!isPasswordValid) {
-      return res.status(400).json({message: 'Invalid password'})
-    }
-
-    const token = jwt.sign({id: existingUser.id, role: existingUser.role}, process.env.JWT_SECRET as string, {expiresIn: '1h'})
-    
-    res.status(200).json({message: 'Login successful', token, user: existingUser})
-  } catch (error) {
-    console.log('Error in login',error) 
-    res.status(500).json({ message: 'Error logging in' });
+export const login = catchAsync(async (req: Request, res: Response) => {
+  const validation = loginSchema.safeParse(req.body);
+  if (!validation.success) {
+    throw new AppError('Validation failed', 400);
   }
-};
 
-export const logout = async (req: Request, res: Response) => {
-  try {
-    res.status(200).json({message: 'Logout successful'})
-  } catch (error) {
-    console.log('Error in logout',error) 
-    res.status(500).json({ message: 'Error logging out' });
+  const { token, user } = await AuthService.login(validation.data);
+  res.status(200).json({
+    status: 'success',
+    message: 'Login successful',
+    data: { token, user }
+  });
+});
+
+export const logout = catchAsync(async (req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'success',
+    message: 'Logout successful'
+  });
+});
+
+export const getMe = catchAsync(async (req: Request, res: Response) => {
+  if (!req.user) {
+    throw new AppError('Unauthorized', 401);
   }
-};
 
-//Перевірка сесії та чи токен дійсний 
+  const user = await AuthService.getMe(req.user.id);
+  res.status(200).json({
+    status: 'success',
+    data: { user }
+  });
+});
 
-export const getMe = async (req: Request, res: Response) => {
-  try {
-    if (!req.user) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-    const user = await User.findByPk(req.user.id, {
-      attributes: { exclude: ['password'] }
-    });
-    res.status(200).json({ user });
-  } catch (error) {
-    console.log('Error in getMe', error);
-    res.status(500).json({ message: 'Error fetching user' });
-  }
-};

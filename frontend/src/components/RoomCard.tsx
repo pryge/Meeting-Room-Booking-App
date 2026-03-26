@@ -1,16 +1,12 @@
 import { Users, Layout, Pencil, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from '../api';
+import { RoomService } from '../services/room.service';
+import { Room } from '../types';
 
 interface RoomCardProps {
-  room: {
-    id: number;
-    name: string;
-    capacity: number;
-    status: 'available' | 'busy';
-  };
-  onEdit?: (room: any) => void;
+  room: Room;
+  onEdit?: (room: Room) => void;
   onDelete?: () => void;
 }
 
@@ -23,6 +19,22 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, onEdit, onDelete }) => {
     'https://images.unsplash.com/photo-1431540015161-0bf868a2d407?auto=format&fit=crop&q=80&w=800',
   ];
   const imageUrl = images[room.id % images.length];
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (window.confirm('Delete this room?')) {
+      try {
+        const response = await RoomService.deleteRoom(room.id);
+        if (response.status === 'success') {
+          onDelete?.();
+        } else {
+          alert(response.message || 'Failed to delete room');
+        }
+      } catch (err) {
+        alert('Error deleting room');
+      }
+    }
+  };
 
   return (
     <div className="group relative bg-white/70 backdrop-blur-2xl rounded-[2.5rem] overflow-hidden border border-white shadow-2xl shadow-slate-200/50 hover:shadow-indigo-200/50 transition-all duration-700 hover:-translate-y-3">
@@ -38,7 +50,7 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, onEdit, onDelete }) => {
               ? 'bg-emerald-500 text-white shadow-emerald-200' 
               : 'bg-rose-500 text-white shadow-rose-200'
           }`}>
-            {room.status}
+            {room.status || 'available'}
           </span>
         </div>
 
@@ -51,13 +63,7 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, onEdit, onDelete }) => {
               <Pencil className="w-4 h-4" />
             </button>
             <button 
-              onClick={async (e) => { 
-                e.preventDefault(); 
-                if (window.confirm('Delete this room?')) {
-                  await api.delete(`/rooms/${room.id}`);
-                  onDelete?.();
-                }
-              }}
+              onClick={handleDelete}
               className="p-3 bg-white/90 backdrop-blur-xl rounded-2xl text-slate-600 hover:text-rose-600 hover:bg-white shadow-xl transition-all active:scale-95"
             >
               <Trash2 className="w-4 h-4" />
@@ -94,3 +100,4 @@ const RoomCard: React.FC<RoomCardProps> = ({ room, onEdit, onDelete }) => {
 };
 
 export default RoomCard;
+

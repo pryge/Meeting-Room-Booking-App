@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 
 import routes from './routes';
 import sequelize from './config/database';
+import { errorMiddleware } from './middleware/ErrorMiddleware';
 
 dotenv.config();
 
@@ -14,6 +15,8 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api', routes);
+
+app.use(errorMiddleware);
 
 sequelize.sync({ alter: true }).then(() => {
   console.log('Database synced');

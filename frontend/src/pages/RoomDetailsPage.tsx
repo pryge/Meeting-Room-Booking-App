@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import api from "../api";
+import { RoomService } from "../services/room.service";
+import { BookingService } from "../services/booking.service";
+import { Room } from "../types";
 import { useAuth } from "../context/AuthContext";
 import { Loader2, Calendar, Users, Layout, MapPin } from "lucide-react";
 
@@ -9,7 +11,7 @@ const RoomDetailsPage: React.FC = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
 
-  const [room, setRoom] = useState<any>(null);
+  const [room, setRoom] = useState<Room | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [error, setError] = useState("");
@@ -26,9 +28,14 @@ const RoomDetailsPage: React.FC = () => {
 
   useEffect(() => {
     const fetchRoom = async () => {
+      if (!id) return;
       try {
-        const response = await api.get(`/rooms/${id}`);
-        setRoom(response.data);
+        const response = await RoomService.getRoomById(Number(id));
+        if (response.status === 'success' && response.data) {
+          setRoom(response.data.room);
+        } else {
+          setError(response.message || "Room not found");
+        }
       } catch (err) {
         console.error("Failed to fetch room", err);
         setError("Room not found or error loading data");
@@ -41,28 +48,29 @@ const RoomDetailsPage: React.FC = () => {
 
   const handleBooking = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!id) return;
+    
     setBookingLoading(true);
     setBookingMsg(null);
-    const payload = {
-      roomId: Number(id),
-      startTime,
-      endTime,
-      description,
-    };
-    console.log("Sending booking payload:", payload);
-
+    
     try {
-      await api.post("/bookings", payload);
-      setBookingMsg({ type: "success", text: "Booking created successfully!" });
-      setTimeout(() => navigate("/my-bookings"), 2000); //-
+      const response = await BookingService.createBooking({
+        roomId: Number(id),
+        startTime,
+        endTime,
+        description,
+      });
+
+      if (response.status === 'success') {
+        setBookingMsg({ type: "success", text: "Booking created successfully!" });
+        setTimeout(() => navigate("/my-bookings"), 2000);
+      } else {
+        setBookingMsg({ type: "error", text: response.message || "Failed to create booking" });
+      }
     } catch (err: any) {
-      console.error("Booking error response:", err.response?.data);
       setBookingMsg({
         type: "error",
-        text:
-          err.response?.data?.details ||
-          err.response?.data?.message ||
-          "Failed to create booking",
+        text: err.response?.data?.message || "Failed to create booking",
       });
     } finally {
       setBookingLoading(false);
@@ -268,3 +276,4 @@ const RoomDetailsPage: React.FC = () => {
 };
 
 export default RoomDetailsPage;
+

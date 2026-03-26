@@ -1,18 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../api';
+import { BookingService } from '../services/booking.service';
+import { Booking } from '../types';
 import { Loader2, Calendar, Trash2, MapPin, Users, Layout } from 'lucide-react';
 import { format } from 'date-fns';
 
 const MyBookingsPage: React.FC = () => {
-  const [bookings, setBookings] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const fetchBookings = async () => {
     try {
-      const response = await api.get('/bookings/me');
-      setBookings(response.data.bookings || []);
+      const response = await BookingService.getMyBookings();
+      if (response.status === 'success' && response.data) {
+        setBookings(response.data.bookings || []);
+      } else {
+        setError(response.message || 'Failed to load your bookings');
+      }
     } catch (err) {
       setError('Failed to load your bookings');
     } finally {
@@ -28,8 +33,12 @@ const MyBookingsPage: React.FC = () => {
     if (!window.confirm('Are you sure you want to cancel this booking?')) return;
     
     try {
-      await api.delete(`/bookings/${id}`);
-      setBookings(bookings.filter(b => b.id !== id));
+      const response = await BookingService.cancelBooking(id);
+      if (response.status === 'success') {
+        setBookings(bookings.filter(b => b.id !== id));
+      } else {
+        alert(response.message || 'Failed to cancel booking');
+      }
     } catch (err) {
       alert('Failed to cancel booking');
     }
@@ -78,20 +87,20 @@ const MyBookingsPage: React.FC = () => {
               <div className="flex-1 space-y-2">
                 <div className="flex items-center gap-3">
                     <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none group-hover:text-indigo-600 transition-colors">
-                        {booking.room?.name || 'Meeting Room'}
+                        {booking.Room?.name || 'Meeting Room'}
                     </h3>
                     <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest">
-                        Conffirmed
+                        Confirmed
                     </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-6 pt-2">
                     <div className="flex items-center gap-2 text-slate-400 text-xs font-black uppercase tracking-widest">
                         <Calendar className="w-4 h-4 text-indigo-500" />
-                        {format(new Date(booking.startTime), 'MMM dd, yyyy • HH:mm')} - {format(new Date(booking.endTime), 'HH:mm')}
+                        {booking.startTime && format(new Date(booking.startTime), 'MMM dd, yyyy • HH:mm')} - {booking.endTime && format(new Date(booking.endTime), 'HH:mm')}
                     </div>
                     <div className="flex items-center gap-2 text-slate-400 text-xs font-black uppercase tracking-widest">
                         <Users className="w-4 h-4 text-indigo-500" />
-                        {booking.room?.capacity || 0} People
+                        {booking.Room?.capacity || 0} People
                     </div>
                     <div className="flex items-center gap-2 text-slate-400 text-xs font-black uppercase tracking-widest">
                         <MapPin className="w-4 h-4 text-indigo-500" />
@@ -121,3 +130,4 @@ const MyBookingsPage: React.FC = () => {
 };
 
 export default MyBookingsPage;
+

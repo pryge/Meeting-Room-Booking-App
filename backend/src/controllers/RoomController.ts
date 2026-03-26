@@ -1,97 +1,60 @@
 import { Request, Response } from "express";
-import { Room } from "../models";
+import { RoomService } from "../services/RoomService";
 import { createRoomSchema, updateRoomSchema } from "../validations/room";
+import { catchAsync } from "../utils/catchAsync";
+import { AppError } from "../utils/AppError";
 
-export const getRoomById = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const room = await Room.findByPk(id);
-    if (!room) {
-      return res.status(404).json({ message: "Room not found" });
-    }
-    res.status(200).json(room);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error fetching room details" });
+export const getRooms = catchAsync(async (req: Request, res: Response) => {
+  const rooms = await RoomService.getAllRooms();
+  res.status(200).json({
+    status: 'success',
+    data: { rooms }
+  });
+});
+
+export const getRoomById = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const room = await RoomService.getRoomById(Number(id));
+  res.status(200).json({
+    status: 'success',
+    data: { room }
+  });
+});
+
+export const createRoom = catchAsync(async (req: Request, res: Response) => {
+  const validation = createRoomSchema.safeParse(req.body);
+  if (!validation.success) {
+    throw new AppError('Validation failed', 400);
   }
-};
 
-export const getRooms = async (req: Request, res: Response) => {
-  try {
-    const rooms = await Room.findAll();
-    res.status(200).json({ rooms });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error fetching rooms" });
+  const room = await RoomService.createRoom(validation.data);
+  res.status(201).json({
+    status: 'success',
+    message: "Room created successfully",
+    data: { room }
+  });
+});
+
+export const updateRoom = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const validation = updateRoomSchema.safeParse(req.body);
+  if (!validation.success) {
+    throw new AppError('Validation failed', 400);
   }
-};
 
-export const createRoom = async (req: Request, res: Response) => {
-  try {
-    const validation = createRoomSchema.safeParse(req.body);
-    if (!validation.success) {
-      return res.status(400).json({ 
-        message: "Validation failed", 
-        errors: validation.error.issues.map(err => ({ field: err.path[0], message: err.message }))
-      });
-    }
+  const room = await RoomService.updateRoom(Number(id), validation.data);
+  res.status(200).json({
+    status: 'success',
+    message: "Room updated successfully",
+    data: { room }
+  });
+});
 
-    const { name, capacity } = validation.data;
-
-    const room = await Room.create({ name, capacity });
-
-    res.status(201).json({ message: "Room created successfully", room });
-  } catch (error) {
-    console.error("Error in createRoom:", error);
-    res.status(500).json({ message: "Error creating room" });
-  }
-};
-
-export const deleteRoom = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-
-    const room = await Room.findByPk(id);
-    if (!room) {
-      return res.status(404).json({ message: "Room not found" });
-    }
-
-    await room.destroy();
-
-    res.status(200).json({ message: "Room deleted" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error deleting room" });
-  }
-};
-
-export const updateRoom = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    
-    const validation = updateRoomSchema.safeParse(req.body);
-    if (!validation.success) {
-      return res.status(400).json({ 
-        message: "Validation failed", 
-        errors: validation.error.issues.map(err => ({ field: err.path[0], message: err.message }))
-      });
-    }
-
-    const room = await Room.findByPk(id);
-    if (!room) {
-      return res.status(404).json({ message: "Room not found" });
-    }
-
-    const { name, capacity } = validation.data;
-
-    if (name) room.name = name;
-    if (capacity) room.capacity = capacity;
-
-    await room.save();
-
-    res.status(200).json({ message: "Room updated successfully", room });
-  } catch (error) {
-    console.error("Error in updateRoom:", error);
-    res.status(500).json({ message: "Error updating room" });
-  }
-};
+export const deleteRoom = catchAsync(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  await RoomService.deleteRoom(Number(id));
+  res.status(200).json({
+    status: 'success',
+    message: "Room deleted successfully"
+  });
+});
